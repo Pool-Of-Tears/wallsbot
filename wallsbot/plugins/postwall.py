@@ -38,6 +38,7 @@ from telegram.ext import (
     CallbackContext,
 )
 
+import shortuuid
 from wallsbot import dp, BOT_ADMINS
 from wallsbot.utils.wall import Wall, CATEGORIES
 
@@ -47,17 +48,18 @@ class Submissions:
         self.submissions = {}
 
     def submit(self, wall: Wall):
-        self.submissions[wall.submitter.id] = wall
-        self._notify_admins(wall)
+        submission_id = shortuuid.uuid()
+        self.submissions[submission_id] = wall
+        self._notify_admins(submission_id, wall)
 
-    def get(self, user_id):
+    def get(self, submission_id):
         try:
-            return self.submissions.pop(int(user_id))
+            return self.submissions.pop(submission_id)
         except KeyError:
             return None
 
     @staticmethod
-    def _notify_admins(wall):
+    def _notify_admins(submission_id, wall):
         caption = "New submission ✨"
         caption += f"Submitted by {wall.submitter.mention_html()}\n"
         caption += f"Category : {wall.category}\n"
@@ -73,13 +75,13 @@ class Submissions:
                         [
                             InlineKeyboardButton(
                                 text="Approve ✅",
-                                callback_data=f"approveWall_yes_{wall.submitter.id}",
+                                callback_data=f"approveWall_yes_{submission_id}",
                             )
                         ],
                         [
                             InlineKeyboardButton(
                                 text="Disapprove ❌",
-                                callback_data=f"approveWall_no_{wall.submitter.id}",
+                                callback_data=f"approveWall_no_{submission_id}",
                             )
                         ],
                     ]
@@ -129,8 +131,8 @@ def choose_tags(update: Update, context: CallbackContext) -> int:
             "Nice! now enter some tags with single space "
             "between them, for example if you're posting a "
             "nature wallpaper which contains trees ane birds "
-            "then tags would be: <code>nature trees birds</code> "
-            "etc\nYou can use max 7 tags."
+            "then tags would be: <i>nature trees birds</i> "
+            "etc...\nYou can use max 7 tags."
         )
         msg.reply_text(text, reply_markup=ReplyKeyboardRemove())
         return ENTER_WALL
@@ -153,22 +155,22 @@ def process_wall(update: Update, context: CallbackContext):
     user = update.effective_user
     msg = update.effective_message
 
-    file_ext = msg.document.file_name.split(".")[1]
-    if file_ext not in {"jpg", "png", "jpeg"}:
-        msg.reply_text(
+    file = msg.document.get_file()
+    context.user_data["submission"]["file"] = file
+
+    try:
+        rep = msg.reply_text("Processing . . .")
+        wall = Wall(submitter=user, **context.user_data["submission"])
+    except ValueError:
+        rep.edit_text(
             "Sorry this looks like an invalid file "
-            "format, only 'jpeg, png, jpg' are allowed.\n"
-            "Please try again."
+            "format, Please try again."
         )
         return ConversationHandler.END
 
-    file = msg.document.get_file()
-    context.user_data["submission"]["file"] = file
-    wall = Wall(submitter=user, **context.user_data["submission"])
-
     if user.id in BOT_ADMINS:
         post_link = wall.post_into_channel()
-        msg.reply_text(
+        rep.edit_text(
             "Sucessfully posted wallpaper in the channel.",
             reply_markup=InlineKeyboardMarkup(
                 [[InlineKeyboardButton(text="Post link  🔗", url=post_link)]]
@@ -178,7 +180,7 @@ def process_wall(update: Update, context: CallbackContext):
     else:
         SUBMISSIONS.submit(wall)
         context.user_data.clear()
-        msg.reply_text(
+        rep.edit_text(
             "Thanks! your wallpaper is sucessfully submitted and is "
             "currently waiting for approval, i'll notify you once it "
             "gets approved or unapproved."
@@ -198,10 +200,10 @@ def cancel_conv(update: Update, _) -> int:
 
 def approve_wall(update: Update, context: CallbackContext):
     query = update.callback_query
-    query.answer()
+    query.answer("Hold on...")
 
-    status, submitter_id = query.data.split("_")[1:]
-    submission = SUBMISSIONS.get(submitter_id)
+    status, submission_id = query.data.split("_")[1:]
+    submission = SUBMISSIONS.get(submission_id)
     if submission is None:
         query.edit_message_caption(
             "This submission is already reviewed by other admin."
@@ -220,7 +222,7 @@ def approve_wall(update: Update, context: CallbackContext):
             "The wallpaper you had submitted is approved "
             "by the admin and sucessfully posted to the channel.",
             reply_markup=InlineKeyboardMarkup(
-                [[InlineKeyboardButton(text="Link 🔗", url=post_link)]]
+                [[InlineKeyboardButton(text="Post link  🔗", url=post_link)]]
             ),
         )
 

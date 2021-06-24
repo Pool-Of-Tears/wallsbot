@@ -58,7 +58,7 @@ logging.basicConfig(
 )
 
 # set Defaults and updater
-defaults = tg.Defaults(run_async=True, parse_mode=ParseMode.HTML)
+defaults = tg.Defaults(timeout=100, run_async=True, parse_mode=ParseMode.HTML)
 updater = tg.Updater(
     TOKEN,
     workers=min(32, os.cpu_count() + 4),

@@ -20,6 +20,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT>
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE O>
 # SOFTWARE.
+import imghdr
 from io import BytesIO
 from telegram import User, File
 
@@ -70,14 +71,21 @@ class Wall:
     def _build_tags(tags: list):
         ret = ""
         for x in tags:
-            ret += f"#{x} "
+            if x.startswith("#"):
+                ret += f"{x} "
+            else:
+                ret += f"#{x} "
         return ret
 
     @staticmethod
     def _build_photo(file: File):
         bytes_io = BytesIO()
         file.download(out=bytes_io)
-        return bytes_io.getvalue()
+        stream = bytes_io.getvalue()
+        image = imghdr.what(None, stream)
+        if image:
+            return stream
+        raise ValueError("Given file isn't an image.")
 
     def _insert_into_db(self, message):
         db.insert_wall(
