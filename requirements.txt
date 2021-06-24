@@ -1,0 +1,5 @@
+psycopg2
+python-dotenv
+python-telegram-bot==13.5
+sqlalchemy
+ujson
