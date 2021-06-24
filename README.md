@@ -10,10 +10,11 @@
 ### Commands available:
 - `/start`: See if bot is awake or sleeping.
 - `/submit`: Post wallpapers to the channel.
+- `/cancel`: Cancel the current submission.
 
 #### Upcoming features:
-- Like button in posts.
-- Wallpaper search by category (once we have enough walls in our collection for every category.)
+- Like (👍 | ❤️ ) button in posts.
+- Browse wallpapers by category (once we have enough walls in our collection for every category.)
 - Option to let users view their submitted walls.
 
 **Contributions of all sizes are welcome :)**
