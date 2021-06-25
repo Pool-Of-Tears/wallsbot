@@ -20,9 +20,9 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT>
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE O>
 # SOFTWARE.
-import imghdr
 from io import BytesIO
 from telegram import User, File
+from PIL import Image
 
 from wallsbot import dp, CHANNEL_ID
 import wallsbot.utils.database as db
@@ -79,13 +79,12 @@ class Wall:
 
     @staticmethod
     def _build_photo(file: File):
-        bytes_io = BytesIO()
-        file.download(out=bytes_io)
-        stream = bytes_io.getvalue()
-        image = imghdr.what(None, stream)
-        if image:
-            return stream
-        raise ValueError("Given file isn't an image.")
+        file_like = BytesIO()
+        file.download(out=file_like)
+        img = Image.open(file_like)
+        if img.format.lower() not in {"png", "jpg", "jpeg"}:
+            raise ValueError("Given file isn't an image.")
+        return file_like.getvalue()
 
     def _insert_into_db(self, message):
         db.insert_wall(

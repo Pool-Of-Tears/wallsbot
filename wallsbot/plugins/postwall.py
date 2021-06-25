@@ -144,14 +144,14 @@ def choose_tags(update: Update, context: CallbackContext) -> int:
         return ConversationHandler.END
 
 
-def enter_wall(update: Update, context: CallbackContext):
+def enter_wall(update: Update, context: CallbackContext) -> int:
     msg = update.effective_message
     context.user_data["submission"]["tags"] = msg.text.split(" ")[:7]
     msg.reply_text("Okay now send the wallpaper as document.")
     return PROCESS_WALL
 
 
-def process_wall(update: Update, context: CallbackContext):
+def process_wall(update: Update, context: CallbackContext) -> int:
     user = update.effective_user
     msg = update.effective_message
 
@@ -161,7 +161,7 @@ def process_wall(update: Update, context: CallbackContext):
     try:
         rep = msg.reply_text("Processing . . .")
         wall = Wall(submitter=user, **context.user_data["submission"])
-    except ValueError:
+    except (IOError, ValueError):
         rep.edit_text(
             "Sorry this looks like an invalid file "
             "format, Please try again."
@@ -191,6 +191,12 @@ def process_wall(update: Update, context: CallbackContext):
 def cancel_conv(update: Update, _) -> int:
     update.effective_message.reply_text("Cancelled!")
     return ConversationHandler.END
+
+
+def conv_timeout(update: Update, _) -> int:
+    update.effective_message.reply_text(
+        "Didn't got any response within specified time, cancelling..."
+    )
 
 
 # =========================================================#
@@ -254,8 +260,12 @@ SUBMIT_WALL_HANDLER = ConversationHandler(
                 process_wall,
             )
         ],
+        ConversationHandler.TIMEOUT: [
+            MessageHandler(Filters.all, conv_timeout)
+        ],
     },
     fallbacks=[CommandHandler("cancel", cancel_conv)],
+    conversation_timeout=100,
 )
 
 APPROVAL_HANDLER = CallbackQueryHandler(approve_wall, pattern=r"approveWall_")
