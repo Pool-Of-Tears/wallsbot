@@ -70,16 +70,24 @@ def insert_wall(*args, **kwargs):
 
 
 def walls_by_category(category):
-    walls = (
-        SESSION.query(Wallpaper).filter(Wallpaper.category == category).all()
-    )
-    return walls
+    try:
+        walls = (
+            SESSION.query(Wallpaper)
+            .filter(Wallpaper.category == category)
+            .all()
+        )
+        return walls
+    finally:
+        SESSION.close()
 
 
 def wall_by_user(user_id):
-    walls = (
-        SESSION.query(Wallpaper)
-        .filter(Wallpaper.submitter_id == user_id)
-        .all()
-    )
-    return walls
+    try:
+        walls = (
+            SESSION.query(Wallpaper)
+            .filter(Wallpaper.submitter_id == user_id)
+            .all()
+        )
+        return walls
+    finally:
+        SESSION.close()

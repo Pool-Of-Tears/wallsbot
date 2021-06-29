@@ -161,7 +161,7 @@ def process_wall(update: Update, context: CallbackContext) -> int:
     try:
         rep = msg.reply_text("Processing . . .")
         wall = Wall(submitter=user, **context.user_data["submission"])
-    except (IOError, ValueError):
+    except IOError:
         rep.edit_text(
             "Sorry this looks like an invalid file "
             "format, Please try again."

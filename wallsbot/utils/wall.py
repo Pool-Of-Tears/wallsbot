@@ -83,7 +83,7 @@ class Wall:
         file.download(out=file_like)
         img = Image.open(file_like)
         if img.format.lower() not in {"png", "jpg", "jpeg"}:
-            raise ValueError("Given file isn't an image.")
+            raise IOError("Given file isn't an image.")
         return file_like.getvalue()
 
     def _insert_into_db(self, message):
